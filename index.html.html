@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExaGuru CellCLI Practice Console v2</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #11172a;
+      --text: #d7e0ff;
+      --muted: #8fa0d6;
+      --green: #7CFFB2;
+      --amber: #FFD166;
+      --red: #FF6B6B;
+      --blue: #79B8FF;
+      --border: #233056;
+      --chip: #0f1b38;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Consolas, Monaco, 'Courier New', monospace;
+      background: linear-gradient(180deg, #08101f 0%, #0b1020 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    header {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10,15,30,.85);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    header h1 { margin: 0 0 6px 0; font-size: 22px; color: var(--green); }
+    header p { margin: 0; color: var(--muted); font-size: 13px; }
+    .layout {
+      display: grid;
+      grid-template-columns: 1.55fr .95fr;
+      gap: 18px;
+      padding: 18px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,.25);
+    }
+    .panel h2 {
+      margin: 0;
+      padding: 12px 14px;
+      font-size: 14px;
+      color: var(--blue);
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+    }
+    #terminal {
+      min-height: 72vh;
+      max-height: 72vh;
+      overflow: auto;
+      padding: 14px;
+      white-space: pre-wrap;
+      line-height: 1.45;
+      font-size: 14px;
+    }
+    .line { margin: 0 0 6px 0; }
+    .prompt { color: var(--green); }
+    .output { color: var(--text); }
+    .muted { color: var(--muted); }
+    .error { color: var(--red); }
+    .warn { color: var(--amber); }
+    .success { color: var(--green); }
+    .inputbar {
+      display: flex;
+      gap: 10px;
+      padding: 12px 14px 14px;
+      border-top: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+    }
+    .prefix { color: var(--green); align-self: center; font-size: 14px; white-space: nowrap; }
+    input[type="text"] {
+      flex: 1;
+      background: #08101d;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+    }
+    button {
+      background: #173263;
+      color: white;
+      border: 1px solid #29529a;
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button:hover { filter: brightness(1.08); }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      padding: 10px 14px 0;
+      flex-wrap: wrap;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .chip {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--chip);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .chip:hover { color: var(--text); }
+    .side { padding: 0; max-height: 82vh; overflow: auto; }
+    .section { padding: 14px; border-bottom: 1px solid var(--border); }
+    .section h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--amber); }
+    .section p, .section li { font-size: 12px; color: var(--muted); line-height: 1.55; }
+    ul { margin: 8px 0 0 16px; padding: 0; }
+    code {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 6px;
+      padding: 1px 5px;
+      color: #cfe0ff;
+    }
+    details {
+      border: 1px solid rgba(255,255,255,.05);
+      background: rgba(255,255,255,.02);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    summary {
+      cursor: pointer;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    .badge { font-size: 10px; padding: 2px 7px; border-radius: 999px; margin-left: 8px; border: 1px solid var(--border); }
+    .b-green { color: var(--green); }
+    .b-amber { color: var(--amber); }
+    .b-red { color: var(--red); }
+    .b-blue { color: var(--blue); }
+    .guide-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .mini { font-size: 11px; color: var(--muted); }
+    .quiz-q { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin: 10px 0; background: rgba(255,255,255,0.02); }
+    .quiz-q p { margin: 0 0 8px; font-weight: 600; }
+    .quiz-options label { display: block; margin: 6px 0; cursor: pointer; }
+    .quiz-actions { margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .quiz-actions button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+    .quiz-result { font-size: 12px; }
+    footer { padding: 10px 18px 18px; color: var(--muted); font-size: 12px; }
+    @media (max-width: 1024px) {
+      .layout { grid-template-columns: 1fr; }
+      #terminal { min-height: 55vh; max-height: 55vh; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ExaGuru CellCLI Practice Console</h1>
+    <p>Training simulator for Exadata CellCLI practice. Dummy data only. Not connected to a real storage cell.</p>
+  </header>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>Practice Console</h2>
+      <div class="toolbar">
+        <span class="chip" data-cmd="HELP">HELP</span>
+        <span class="chip" data-cmd="SHOW SCENARIO">SHOW SCENARIO</span>
+        <span class="chip" data-cmd="SCENARIO HEALTHY">HEALTHY</span>
+        <span class="chip" data-cmd="SCENARIO WARNING">WARNING</span>
+        <span class="chip" data-cmd="SCENARIO FAILURE">FAILURE</span>
+        <span class="chip" data-cmd="SCENARIO CAPACITY">CAPACITY</span>
+        <span class="chip" data-cmd="SCENARIO RESYNC">RESYNC</span>
+      </div>
+      <div id="terminal"></div>
+      <div class="inputbar">
+        <div class="prefix">CellCLI&gt;</div>
+        <input id="cmd" type="text" autocomplete="off" spellcheck="false" placeholder="Type HELP or LIST CELL DETAIL and press Enter" />
+        <button id="runBtn">Run</button>
+        <button id="clearBtn">Clear</button>
+      </div>
+    </div>
+
+    <div class="panel side">
+      <h2>Quick Guide</h2>
+      <div class="section">
+        <h3>How candidates should use this lab</h3>
+        <p>Start at Level 1 and move in order. First read the topic, then run the example commands, then move to the exercise section inside each tab. Use <code>SCENARIO ...</code> commands to switch from normal to warning or failure conditions and repeat the same checks.</p>
+      </div>
+      <div class="section guide-grid">
+        <details open>
+          <summary>Level 1 — Get comfortable with CellCLI navigation <span class="badge b-green">Beginner</span></summary>
+          <ul>
+            <li>Goal: learn object names and basic listing style.</li>
+            <li>Run: <code>HELP</code>, <code>LIST CELL</code>, <code>LIST CELLDISK</code>, <code>LIST GRIDDISK</code>, <code>LIST PHYSICALDISK</code></li>
+            <li>Then run: <code>DESCRIBE CELL</code>, <code>DESCRIBE CELLDISK</code></li>
+            <li>Exercise: identify flash disks vs hard disks and map them to cell / diskgroup usage.</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Level 2 — Work with attributes and detail output <span class="badge b-green">Core</span></summary>
+          <ul>
+            <li>Goal: reduce noise and focus on key attributes.</li>
+            <li>Run: <code>LIST CELL ATTRIBUTES name,status,cellVersion,cellsrvStatus,msStatus,rsStatus</code></li>
+            <li>Run: <code>LIST CELLDISK ATTRIBUTES name,status,diskType,size,freeSpace,errorCount</code></li>
+            <li>Run: <code>LIST PHYSICALDISK DETAIL</code></li>
+            <li>Exercise: note which attributes help for quick health check.</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Level 3 — Filtering and targeted checks <span class="badge b-amber">Intermediate</span></summary>
+          <ul>
+            <li>Goal: locate only the object that matters.</li>
+            <li>Run: <code>LIST GRIDDISK WHERE asmDiskGroupName = 'DATA' ATTRIBUTES name,asmDiskGroupName,status,size</code></li>
+            <li>Run: <code>LIST PHYSICALDISK WHERE status != 'normal' ATTRIBUTES name,slotNumber,diskType,status,errorCount</code></li>
+            <li>Run: <code>LIST CELLDISK WHERE name LIKE 'FD%' ATTRIBUTES name,status,size,errorCount</code></li>
+            <li>Exercise: use <code>SCENARIO WARNING</code> and repeat the same commands.</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Level 4 — Metrics, alerts, and flash usage <span class="badge b-amber">Ops</span></summary>
+          <ul>
+            <li>Goal: read performance and alert indicators.</li>
+            <li>Run: <code>LIST METRICCURRENT</code></li>
+            <li>Run: <code>LIST METRICHISTORY WHERE alertState != 'normal' ATTRIBUTES name,metricObjectName,metricValue,alertState,collectionTime</code></li>
+            <li>Run: <code>LIST ALERTHISTORY</code>, <code>LIST ALERTDEFINITION</code></li>
+            <li>Run: <code>LIST FLASHCACHE</code>, <code>LIST FLASHCACHECONTENT</code></li>
+            <li>Exercise: determine whether the issue is capacity related, latency related, or disk related.</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Level 5 — Troubleshooting flow for storage incidents <span class="badge b-red">Advanced</span></summary>
+          <ul>
+            <li>Goal: follow a realistic triage sequence.</li>
+            <li>Step 1: <code>CHECK CELL STATUS</code></li>
+            <li>Step 2: <code>SHOW ALERTS</code></li>
+            <li>Step 3: <code>SHOW LOG ALERT</code></li>
+            <li>Step 4: <code>SHOW LOG CELLSRV</code> and <code>SHOW LOG MS</code></li>
+            <li>Step 5: <code>RUN DIAG DISKS</code> or <code>RUN DIAG FLASH</code></li>
+            <li>Step 6: verify impact using <code>LIST GRIDDISK</code>, <code>LIST PHYSICALDISK</code>, <code>LIST METRICCURRENT</code></li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Scenario pack — What to practice <span class="badge b-blue">Exercises</span></summary>
+          <p>Use the same triage rhythm for every scenario: <code>SHOW SCENARIO</code> → <code>CHECK CELL STATUS</code> → <code>SHOW ALERTS</code> → targeted <code>LIST ...</code> checks → <code>SHOW LOG ...</code> → <code>RUN DIAG ...</code>.</p>
+          <ul>
+            <li><span class="success">HEALTHY</span>: establish baseline output for all major objects.</li>
+            <li>Commands: <code>LIST CELL DETAIL</code>, <code>LIST CELLDISK</code>, <code>LIST GRIDDISK</code>, <code>LIST PHYSICALDISK</code>, <code>LIST METRICCURRENT</code>.</li>
+            <li>What to learn: what “normal” looks like before troubleshooting begins.</li>
+          </ul>
+          <ul>
+            <li><span class="warn">WARNING</span>: soft degradation on disk / celldisk with moderate alerts.</li>
+            <li>Commands: <code>CHECK STORAGE HEALTH</code>, <code>LIST PHYSICALDISK WHERE status != 'normal' ATTRIBUTES name,slotNumber,diskType,status,errorCount</code>, <code>LIST CELLDISK ATTRIBUTES name,status,errorCount,freeSpace</code>, <code>SHOW LOG ALERT</code>.</li>
+            <li>What to learn: identify the first object showing warning and correlate alert text with object status.</li>
+          </ul>
+          <ul>
+            <li><span class="error">FAILURE</span>: failed physical disk, inactive griddisk, elevated latency.</li>
+            <li>Commands: <code>SHOW ALERTS</code>, <code>LIST GRIDDISK WHERE status != 'active' ATTRIBUTES name,asmDiskGroupName,status,errorCount</code>, <code>LIST METRICHISTORY WHERE alertState != 'normal' ATTRIBUTES name,metricValue,alertState,collectionTime</code>, <code>SHOW LOG CELLSRV</code>, <code>RUN DIAG DISKS</code>.</li>
+            <li>What to learn: move from symptom to failed component and explain likely next DBA/storage-admin step.</li>
+          </ul>
+          <ul>
+            <li><span class="warn">CAPACITY</span>: storage pressure, flash cache or cell disk usage high.</li>
+            <li>Commands: <code>LIST FLASHCACHE</code>, <code>LIST FLASHCACHECONTENT</code>, <code>LIST THRESHOLD</code>, <code>LIST ALERTHISTORY</code>, <code>SHOW LOG MS</code>.</li>
+            <li>What to learn: differentiate capacity stress from outright hardware failure.</li>
+          </ul>
+          <ul>
+            <li><span class="warn">RESYNC</span>: rebalance / recovery / resync style workload in progress.</li>
+            <li>Commands: <code>LIST IORMPLAN</code>, <code>LIST METRICCURRENT</code>, <code>LIST METRICHISTORY</code>, <code>SHOW LOG RS</code>, <code>RUN DIAG SERVICES</code>.</li>
+            <li>What to learn: explain why metrics can look busy even when hardware is not failed.</li>
+          </ul>
+          <p class="mini">Suggested exercise path: start with HEALTHY, repeat same command set on WARNING and FAILURE, then finish with CAPACITY and RESYNC to practice interpretation rather than only fault finding.</p>
+        </details>
+
+        <details>
+          <summary>Supported command catalog <span class="badge b-green">35+ commands</span></summary>
+          <ul>
+            <li><code>HELP</code>, <code>SHOW SCENARIO</code>, <code>CLEAR</code></li>
+            <li><code>SCENARIO HEALTHY</code>, <code>SCENARIO WARNING</code>, <code>SCENARIO FAILURE</code>, <code>SCENARIO CAPACITY</code>, <code>SCENARIO RESYNC</code></li>
+            <li><code>LIST CELL</code>, <code>LIST CELL DETAIL</code></li>
+            <li><code>LIST CELLDISK</code>, <code>LIST CELLDISK DETAIL</code></li>
+            <li><code>LIST GRIDDISK</code>, <code>LIST GRIDDISK DETAIL</code></li>
+            <li><code>LIST PHYSICALDISK</code>, <code>LIST PHYSICALDISK DETAIL</code></li>
+            <li><code>LIST METRICCURRENT</code>, <code>LIST METRICHISTORY</code></li>
+            <li><code>LIST ALERTHISTORY</code>, <code>LIST ALERTDEFINITION</code></li>
+            <li><code>LIST FLASHCACHE</code>, <code>LIST FLASHCACHECONTENT</code></li>
+            <li><code>LIST IORMPLAN</code>, <code>LIST THRESHOLD</code></li>
+            <li><code>DESCRIBE CELL</code>, <code>DESCRIBE CELLDISK</code>, <code>DESCRIBE GRIDDISK</code>, <code>DESCRIBE PHYSICALDISK</code>, <code>DESCRIBE METRICCURRENT</code>, <code>DESCRIBE METRICHISTORY</code>, <code>DESCRIBE ALERTHISTORY</code>, <code>DESCRIBE ALERTDEFINITION</code>, <code>DESCRIBE FLASHCACHE</code>, <code>DESCRIBE FLASHCACHECONTENT</code>, <code>DESCRIBE IORMPLAN</code>, <code>DESCRIBE THRESHOLD</code></li>
+            <li><code>LIST ... ATTRIBUTES ...</code>, <code>LIST ... WHERE ...</code></li>
+            <li><code>CHECK CELL STATUS</code>, <code>CHECK STORAGE HEALTH</code>, <code>SHOW ALERTS</code></li>
+            <li><code>SHOW LOG ALERT</code>, <code>SHOW LOG CELLSRV</code>, <code>SHOW LOG MS</code>, <code>SHOW LOG RS</code></li>
+            <li><code>RUN DIAG DISKS</code>, <code>RUN DIAG FLASH</code>, <code>RUN DIAG SERVICES</code></li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Interview quiz — 25 multiple-choice questions <span class="badge b-red">MCQ</span></summary>
+          <p class="mini">Select one answer for each question and click Check. This quiz mixes simulator behavior and CellCLI troubleshooting concepts.</p>
+          <div id="quizContainer"></div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <script>
+    const terminal = document.getElementById('terminal');
+    const cmdInput = document.getElementById('cmd');
+    const runBtn = document.getElementById('runBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    const describeMap = {
+      CELL: ['name','cellVersion','releaseVersion','status','upTime','makeModel','ipaddress1','cellsrvStatus','msStatus','rsStatus','flashCacheMode','cpuCount','temperatureStatus'],
+      CELLDISK: ['name','status','size','deviceName','diskType','freeSpace','errorCount','interleaving','cellDiskType'],
+      GRIDDISK: ['name','asmDiskGroupName','status','size','availableTo','cachingPolicy','errorCount','asmModeStatus','offset'],
+      PHYSICALDISK: ['name','slotNumber','diskType','physicalFirmware','status','size','errorCount','deviceName','temperature','ledStatus','predFailStatus'],
+      METRICCURRENT: ['name','metricObjectName','metricValue','metricUnit','alertState','collectionTime'],
+      METRICHISTORY: ['name','metricObjectName','metricValue','metricUnit','alertState','collectionTime'],
+      ALERTHISTORY: ['alertSequenceID','severity','alertMessage','alertShortName','beginTime','endTime','examinedObject'],
+      ALERTDEFINITION: ['name','metricName','warningThreshold','criticalThreshold','comparisonOperator','scope'],
+      FLASHCACHE: ['name','status','size','effectiveCacheSize','cacheMode','writeBackDefer'],
+      FLASHCACHECONTENT: ['dbUniqueName','objectType','cachedSize','hitCount','keep'],
+      IORMPLAN: ['name','objective','status','dbPlan','categoryPlan','flashCacheLimit'],
+      THRESHOLD: ['name','metricName','scope','warning','critical','operator']
+    };
+
+    const base = {
+      HEALTHY: {
+        CELL: [{
+          name:'cell01', cellVersion:'23.1.8.0.0', releaseVersion:'23.1.8.0.0', status:'online', upTime:'18 days 04:12:10',
+          makeModel:'Oracle Exadata Storage Server X9M', ipaddress1:'10.10.20.31', cellsrvStatus:'running', msStatus:'running', rsStatus:'running',
+          flashCacheMode:'WriteBack', cpuCount:'64', temperatureStatus:'normal'
+        }],
+        CELLDISK: [
+          {name:'CD_00_cell01',status:'normal',size:'278G',deviceName:'/dev/sdb',diskType:'flash',freeSpace:'84G',errorCount:'0',interleaving:'none',cellDiskType:'flash'},
+          {name:'CD_01_cell01',status:'normal',size:'278G',deviceName:'/dev/sdc',diskType:'flash',freeSpace:'93G',errorCount:'0',interleaving:'none',cellDiskType:'flash'},
+          {name:'CD_02_cell01',status:'normal',size:'278G',deviceName:'/dev/sdd',diskType:'flash',freeSpace:'71G',errorCount:'0',interleaving:'none',cellDiskType:'flash'},
+          {name:'CD_03_cell01',status:'normal',size:'278G',deviceName:'/dev/sde',diskType:'flash',freeSpace:'66G',errorCount:'0',interleaving:'none',cellDiskType:'flash'},
+          {name:'FD_00_cell01',status:'normal',size:'7.2T',deviceName:'/dev/sdf',diskType:'harddisk',freeSpace:'1.4T',errorCount:'0',interleaving:'none',cellDiskType:'harddisk'},
+          {name:'FD_01_cell01',status:'normal',size:'7.2T',deviceName:'/dev/sdg',diskType:'harddisk',freeSpace:'1.1T',errorCount:'0',interleaving:'none',cellDiskType:'harddisk'}
+        ],
+        GRIDDISK: [
+          {name:'DATA_CD_00_cell01',asmDiskGroupName:'DATA',status:'active',size:'220G',availableTo:'all',cachingPolicy:'default',errorCount:'0',asmModeStatus:'ONLINE',offset:'0G'},
+          {name:'DATA_CD_01_cell01',asmDiskGroupName:'DATA',status:'active',size:'220G',availableTo:'all',cachingPolicy:'default',errorCount:'0',asmModeStatus:'ONLINE',offset:'220G'},
+          {name:'RECO_FD_00_cell01',asmDiskGroupName:'RECO',status:'active',size:'5.8T',availableTo:'all',cachingPolicy:'none',errorCount:'0',asmModeStatus:'ONLINE',offset:'0G'},
+          {name:'RECO_FD_01_cell01',asmDiskGroupName:'RECO',status:'active',size:'5.8T',availableTo:'all',cachingPolicy:'none',errorCount:'0',asmModeStatus:'ONLINE',offset:'5.8T'}
+        ],
+        PHYSICALDISK: [
+          {name:'PD_00_cell01',slotNumber:'0',diskType:'flash',physicalFirmware:'1.0.12',status:'normal',size:'307G',errorCount:'0',deviceName:'/dev/sdb',temperature:'34C',ledStatus:'off',predFailStatus:'no'},
+          {name:'PD_01_cell01',slotNumber:'1',diskType:'flash',physicalFirmware:'1.0.12',status:'normal',size:'307G',errorCount:'0',deviceName:'/dev/sdc',temperature:'35C',ledStatus:'off',predFailStatus:'no'},
+          {name:'PD_02_cell01',slotNumber:'2',diskType:'flash',physicalFirmware:'1.0.12',status:'normal',size:'307G',errorCount:'0',deviceName:'/dev/sdd',temperature:'34C',ledStatus:'off',predFailStatus:'no'},
+          {name:'PD_03_cell01',slotNumber:'3',diskType:'flash',physicalFirmware:'1.0.12',status:'normal',size:'307G',errorCount:'0',deviceName:'/dev/sde',temperature:'34C',ledStatus:'off',predFailStatus:'no'},
+          {name:'PD_10_cell01',slotNumber:'10',diskType:'harddisk',physicalFirmware:'A3C4',status:'normal',size:'7.2T',errorCount:'0',deviceName:'/dev/sdf',temperature:'39C',ledStatus:'off',predFailStatus:'no'},
+          {name:'PD_11_cell01',slotNumber:'11',diskType:'harddisk',physicalFirmware:'A3C4',status:'normal',size:'7.2T',errorCount:'0',deviceName:'/dev/sdg',temperature:'40C',ledStatus:'off',predFailStatus:'no'}
+        ],
+        METRICCURRENT: [
+          {name:'CL_CPUT',metricObjectName:'CELL',metricValue:'21.8',metricUnit:'%',alertState:'normal',collectionTime:'2026-03-09T15:18:10'},
+          {name:'CD_IO_RQ_SM',metricObjectName:'CELLDISK',metricValue:'1.2',metricUnit:'ms',alertState:'normal',collectionTime:'2026-03-09T15:18:10'},
+          {name:'FD_IO_UTIL',metricObjectName:'CELLDISK',metricValue:'42.4',metricUnit:'%',alertState:'normal',collectionTime:'2026-03-09T15:18:10'},
+          {name:'FC_BY_USED',metricObjectName:'FLASHCACHE',metricValue:'63.0',metricUnit:'%',alertState:'normal',collectionTime:'2026-03-09T15:18:10'},
+          {name:'CL_FS_USED',metricObjectName:'CELL',metricValue:'54.1',metricUnit:'%',alertState:'normal',collectionTime:'2026-03-09T15:18:10'}
+        ],
+        METRICHISTORY: [
+          {name:'CL_CPUT',metricObjectName:'CELL',metricValue:'18.5',metricUnit:'%',alertState:'normal',collectionTime:'2026-03-09T15:03:10'},
+          {name:'CL_CPUT',metricObjectName:'CELL',metricValue:'19.9',metricUnit:'%',alertState:'normal',collectionTime:'2026-03-09T15:08:10'},
+          {name:'CD_IO_RQ_SM',metricObjectName:'CELLDISK',metricValue:'1.1',metricUnit:'ms',alertState:'normal',collectionTime:'2026-03-09T15:03:10'},
+          {name:'CD_IO_RQ_SM',metricObjectName:'CELLDISK',metricValue:'1.2',metricUnit:'ms',alertState:'normal',collectionTime:'2026-03-09T15:08:10'},
+          {name:'FC_BY_USED',metricObjectName:'FLASHCACHE',metricValue:'61.5',metricUnit:'%',alertState:'normal',collectionTime:'2026-03-09T15:03:10'}
+        ],
+        ALERTHISTORY: [
+          {alertSequenceID:'1001',severity:'clear',alertMessage:'No active alerts in simulator baseline',alertShortName:'BASELINE_OK',beginTime:'2026-03-09T15:18:10',endTime:'2026-03-09T15:18:10',examinedObject:'cell01'}
+        ],
+        ALERTDEFINITION: [
+          {name:'CD_IO_RQ_SM',metricName:'small read latency',warningThreshold:'5',criticalThreshold:'15',comparisonOperator:'>',scope:'CELLDISK'},
+          {name:'FD_IO_UTIL',metricName:'hard disk utilization',warningThreshold:'80',criticalThreshold:'95',comparisonOperator:'>',scope:'CELLDISK'},
+          {name:'FC_BY_USED',metricName:'flash cache bytes used',warningThreshold:'85',criticalThreshold:'95',comparisonOperator:'>',scope:'FLASHCACHE'},
+          {name:'CL_FS_USED',metricName:'cell filesystem usage',warningThreshold:'80',criticalThreshold:'90',comparisonOperator:'>',scope:'CELL'}
+        ],
+        FLASHCACHE: [
+          {name:'flashcache_cell01',status:'normal',size:'1.1T',effectiveCacheSize:'1.0T',cacheMode:'WriteBack',writeBackDefer:'0'}
+        ],
+        FLASHCACHECONTENT: [
+          {dbUniqueName:'PROD1',objectType:'datafile',cachedSize:'420G',hitCount:'15492',keep:'false'},
+          {dbUniqueName:'PROD1',objectType:'redo',cachedSize:'88G',hitCount:'3201',keep:'true'},
+          {dbUniqueName:'UAT1',objectType:'datafile',cachedSize:'176G',hitCount:'4270',keep:'false'}
+        ],
+        IORMPLAN: [
+          {name:'DEFAULT_PLAN',objective:'auto',status:'active',dbPlan:'PROD1=80,UAT1=20',categoryPlan:'other=100',flashCacheLimit:'none'}
+        ],
+        THRESHOLD: [
+          {name:'latency_warn',metricName:'CD_IO_RQ_SM',scope:'CELLDISK',warning:'5',critical:'15',operator:'>'},
+          {name:'disk_util_warn',metricName:'FD_IO_UTIL',scope:'CELLDISK',warning:'80',critical:'95',operator:'>'},
+          {name:'flash_used_warn',metricName:'FC_BY_USED',scope:'FLASHCACHE',warning:'85',critical:'95',operator:'>'}
+        ],
+        LOGS: {
+          ALERT: [
+            '2026-03-09 15:18:10 INFO baseline check complete; no active cell alerts',
+            '2026-03-09 15:18:11 INFO metrics collection healthy for cellsrv, ms, rs'
+          ],
+          CELLSRV: [
+            '2026-03-09 15:16:42 INFO cellsrv startup state running',
+            '2026-03-09 15:18:07 INFO flash cache hit ratio stable at 84%'
+          ],
+          MS: [
+            '2026-03-09 15:18:03 INFO management service heartbeat healthy',
+            '2026-03-09 15:18:04 INFO no pending service requests'
+          ],
+          RS: [
+            '2026-03-09 15:17:59 INFO restart service supervision normal',
+            '2026-03-09 15:18:05 INFO all cell services monitored as running'
+          ]
+        }
+      }
+    };
+
+    function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
+
+    function applyScenario(name) {
+      const data = deepClone(base.HEALTHY);
+      if (name === 'WARNING') {
+        data.CELLDISK.find(r => r.name === 'FD_01_cell01').status = 'warning';
+        data.CELLDISK.find(r => r.name === 'FD_01_cell01').errorCount = '7';
+        data.PHYSICALDISK.find(r => r.name === 'PD_11_cell01').status = 'warning';
+        data.PHYSICALDISK.find(r => r.name === 'PD_11_cell01').errorCount = '7';
+        data.PHYSICALDISK.find(r => r.name === 'PD_11_cell01').predFailStatus = 'yes';
+        data.METRICCURRENT.find(r => r.name === 'FD_IO_UTIL').metricValue = '82.9';
+        data.METRICCURRENT.find(r => r.name === 'FD_IO_UTIL').alertState = 'warning';
+        data.METRICHISTORY.push({name:'FD_IO_UTIL',metricObjectName:'CELLDISK',metricValue:'81.0',metricUnit:'%',alertState:'warning',collectionTime:'2026-03-09T15:13:10'});
+        data.ALERTHISTORY = [
+          {alertSequenceID:'1107',severity:'warning',alertMessage:'Predictive failure signal on physical disk PD_11_cell01',alertShortName:'PD_PREDFAIL',beginTime:'2026-03-09T15:12:04',endTime:'',examinedObject:'PD_11_cell01'},
+          {alertSequenceID:'1108',severity:'warning',alertMessage:'Hard disk utilization crossed warning threshold on FD_01_cell01',alertShortName:'FD_IO_UTIL',beginTime:'2026-03-09T15:13:10',endTime:'',examinedObject:'FD_01_cell01'}
+        ];
+        data.LOGS.ALERT = [
+          '2026-03-09 15:12:04 WARNING predictive failure signal on PD_11_cell01',
+          '2026-03-09 15:13:10 WARNING disk utilization on FD_01_cell01 exceeded warning threshold'
+        ];
+        data.LOGS.CELLSRV = [
+          '2026-03-09 15:12:02 WARNING retries observed on /dev/sdg',
+          '2026-03-09 15:13:10 WARNING elevated service time detected for FD_01_cell01'
+        ];
+      }
+      if (name === 'FAILURE') {
+        data.CELLDISK.find(r => r.name === 'FD_01_cell01').status = 'warning';
+        data.CELLDISK.find(r => r.name === 'FD_01_cell01').errorCount = '22';
+        data.GRIDDISK.find(r => r.name === 'RECO_FD_01_cell01').status = 'inactive';
+        data.GRIDDISK.find(r => r.name === 'RECO_FD_01_cell01').errorCount = '4';
+        data.GRIDDISK.find(r => r.name === 'RECO_FD_01_cell01').asmModeStatus = 'OFFLINE';
+        data.PHYSICALDISK.find(r => r.name === 'PD_11_cell01').status = 'failed';
+        data.PHYSICALDISK.find(r => r.name === 'PD_11_cell01').errorCount = '22';
+        data.PHYSICALDISK.find(r => r.name === 'PD_11_cell01').ledStatus = 'on';
+        data.PHYSICALDISK.find(r => r.name === 'PD_11_cell01').predFailStatus = 'yes';
+        data.METRICCURRENT.find(r => r.name === 'CD_IO_RQ_SM').metricValue = '18.7';
+        data.METRICCURRENT.find(r => r.name === 'CD_IO_RQ_SM').alertState = 'critical';
+        data.METRICCURRENT.find(r => r.name === 'FD_IO_UTIL').metricValue = '96.4';
+        data.METRICCURRENT.find(r => r.name === 'FD_IO_UTIL').alertState = 'critical';
+        data.METRICHISTORY.push({name:'CD_IO_RQ_SM',metricObjectName:'CELLDISK',metricValue:'16.3',metricUnit:'ms',alertState:'critical',collectionTime:'2026-03-09T15:13:10'});
+        data.ALERTHISTORY = [
+          {alertSequenceID:'1201',severity:'critical',alertMessage:'Physical disk PD_11_cell01 failed and marked offline',alertShortName:'PD_FAILED',beginTime:'2026-03-09T15:14:20',endTime:'',examinedObject:'PD_11_cell01'},
+          {alertSequenceID:'1202',severity:'critical',alertMessage:'Grid disk RECO_FD_01_cell01 inactive due to underlying disk failure',alertShortName:'GRIDDISK_INACTIVE',beginTime:'2026-03-09T15:14:24',endTime:'',examinedObject:'RECO_FD_01_cell01'},
+          {alertSequenceID:'1203',severity:'critical',alertMessage:'Small read latency crossed critical threshold',alertShortName:'CD_IO_RQ_SM',beginTime:'2026-03-09T15:15:00',endTime:'',examinedObject:'cell01'}
+        ];
+        data.LOGS.ALERT = [
+          '2026-03-09 15:14:20 CRITICAL physical disk PD_11_cell01 failed; service impact possible',
+          '2026-03-09 15:14:24 CRITICAL griddisk RECO_FD_01_cell01 transitioned to inactive',
+          '2026-03-09 15:15:00 CRITICAL latency threshold exceeded for small reads'
+        ];
+        data.LOGS.CELLSRV = [
+          '2026-03-09 15:14:19 ERROR i/o timeout detected on /dev/sdg',
+          '2026-03-09 15:14:20 ERROR physical disk state changed to failed for PD_11_cell01',
+          '2026-03-09 15:14:24 WARNING remapping affected extents and deactivating dependent griddisk'
+        ];
+        data.LOGS.MS = [
+          '2026-03-09 15:14:22 WARNING metric server captured critical alert payload for disk failure',
+          '2026-03-09 15:15:01 INFO management queue posted alert notifications'
+        ];
+      }
+      if (name === 'CAPACITY') {
+        data.CELLDISK.forEach(r => { if (r.diskType === 'harddisk') r.freeSpace = '240G'; });
+        data.METRICCURRENT.find(r => r.name === 'FC_BY_USED').metricValue = '94.8';
+        data.METRICCURRENT.find(r => r.name === 'FC_BY_USED').alertState = 'warning';
+        data.METRICCURRENT.find(r => r.name === 'CL_FS_USED').metricValue = '88.6';
+        data.METRICCURRENT.find(r => r.name === 'CL_FS_USED').alertState = 'warning';
+        data.METRICHISTORY.push({name:'FC_BY_USED',metricObjectName:'FLASHCACHE',metricValue:'93.4',metricUnit:'%',alertState:'warning',collectionTime:'2026-03-09T15:13:10'});
+        data.FLASHCACHE[0].status = 'warning';
+        data.FLASHCACHECONTENT.push({dbUniqueName:'ARCHPROD',objectType:'backup piece',cachedSize:'210G',hitCount:'211',keep:'false'});
+        data.ALERTHISTORY = [
+          {alertSequenceID:'1301',severity:'warning',alertMessage:'Flash cache usage has crossed warning threshold',alertShortName:'FC_BY_USED',beginTime:'2026-03-09T15:10:44',endTime:'',examinedObject:'flashcache_cell01'},
+          {alertSequenceID:'1302',severity:'warning',alertMessage:'Cell filesystem usage is high',alertShortName:'CL_FS_USED',beginTime:'2026-03-09T15:12:11',endTime:'',examinedObject:'cell01'}
+        ];
+        data.LOGS.ALERT = [
+          '2026-03-09 15:10:44 WARNING flash cache usage crossed 94%',
+          '2026-03-09 15:12:11 WARNING cell filesystem usage trending high'
+        ];
+        data.LOGS.CELLSRV = [
+          '2026-03-09 15:10:40 INFO writeback cache pressure detected; eviction rate increased',
+          '2026-03-09 15:12:10 WARNING low free space on hard disk celldisks'
+        ];
+      }
+      if (name === 'RESYNC') {
+        data.GRIDDISK.find(r => r.name === 'RECO_FD_01_cell01').status = 'resync';
+        data.GRIDDISK.find(r => r.name === 'RECO_FD_01_cell01').asmModeStatus = 'SYNCING';
+        data.METRICCURRENT.find(r => r.name === 'FD_IO_UTIL').metricValue = '77.0';
+        data.METRICCURRENT.find(r => r.name === 'FD_IO_UTIL').alertState = 'warning';
+        data.METRICHISTORY.push({name:'REBAL_IO',metricObjectName:'GRIDDISK',metricValue:'68.0',metricUnit:'%',alertState:'warning',collectionTime:'2026-03-09T15:13:10'});
+        data.ALERTHISTORY = [
+          {alertSequenceID:'1401',severity:'warning',alertMessage:'ASM rebalance / resync activity in progress on RECO_FD_01_cell01',alertShortName:'ASM_RESYNC',beginTime:'2026-03-09T15:09:14',endTime:'',examinedObject:'RECO_FD_01_cell01'}
+        ];
+        data.LOGS.ALERT = [
+          '2026-03-09 15:09:14 WARNING rebalance activity active; monitor latency and throughput'
+        ];
+        data.LOGS.CELLSRV = [
+          '2026-03-09 15:09:13 INFO background mirror resync started for extents on RECO_FD_01_cell01',
+          '2026-03-09 15:13:10 INFO resync throughput stable at 680 MB/s'
+        ];
+      }
+      return data;
+    }
+
+    let currentScenario = 'HEALTHY';
+    let datasets = applyScenario(currentScenario);
+    let history = [];
+    let historyIndex = -1;
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function addLine(text, cls='output') {
+      const div = document.createElement('div');
+      div.className = `line ${cls}`;
+      div.innerHTML = text;
+      terminal.appendChild(div);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+    function banner() {
+      addLine('Welcome to ExaGuru CellCLI Practice Console v2', 'success');
+      addLine('Dummy training environment with realistic sample output. Type HELP to begin.', 'muted');
+      addLine('Tip: Start with SCENARIO HEALTHY, then move to WARNING, FAILURE, CAPACITY, and RESYNC.', 'muted');
+      addLine('');
+    }
+
+    function formatTable(rows, attrs) {
+      if (!rows.length) return 'No rows returned';
+      const columns = attrs || Object.keys(rows[0]);
+      const widths = {};
+      for (const col of columns) widths[col] = Math.max(col.length, ...rows.map(r => String(r[col] ?? '').length));
+      const header = columns.map(c => c.padEnd(widths[c])).join('  ');
+      const body = rows.map(r => columns.map(c => String(r[c] ?? '').padEnd(widths[c])).join('  ')).join('\n');
+      return header + '\n' + body;
+    }
+
+    function parseWhere(whereClause) {
+      const eq = whereClause.match(/^([a-zA-Z0-9_]+)\s*=\s*'([^']+)'$/i);
+      const neq = whereClause.match(/^([a-zA-Z0-9_]+)\s*!=\s*'([^']+)'$/i);
+      const like = whereClause.match(/^([a-zA-Z0-9_]+)\s+LIKE\s+'([^']+)'$/i);
+      if (eq) return row => String(row[eq[1]] ?? '').toLowerCase() === eq[2].toLowerCase();
+      if (neq) return row => String(row[neq[1]] ?? '').toLowerCase() !== neq[2].toLowerCase();
+      if (like) {
+        const patt = like[2].replace(/([.+^${}()|[\]\\])/g, '\\$1').replace(/%/g, '.*').replace(/_/g, '.');
+        const re = new RegExp(`^${patt}$`, 'i');
+        return row => re.test(String(row[like[1]] ?? ''));
+      }
+      return null;
+    }
+
+    const listObjects = ['CELL','CELLDISK','GRIDDISK','PHYSICALDISK','METRICCURRENT','METRICHISTORY','ALERTHISTORY','ALERTDEFINITION','FLASHCACHE','FLASHCACHECONTENT','IORMPLAN','THRESHOLD'];
+
+    function handleList(raw) {
+      const detailMatch = raw.trim().match(/^LIST\s+([A-Z]+)\s+DETAIL$/i);
+      if (detailMatch) {
+        const object = detailMatch[1].toUpperCase();
+        if (!listObjects.includes(object)) return errorSyntax();
+        return formatTable(datasets[object] || []);
+      }
+      const re = /^LIST\s+(CELL|CELLDISK|GRIDDISK|PHYSICALDISK|METRICCURRENT|METRICHISTORY|ALERTHISTORY|ALERTDEFINITION|FLASHCACHE|FLASHCACHECONTENT|IORMPLAN|THRESHOLD)(?:\s+WHERE\s+(.+?))?(?:\s+ATTRIBUTES\s+(.+))?$/i;
+      const m = raw.trim().match(re);
+      if (!m) return errorSyntax();
+      const object = m[1].toUpperCase();
+      const whereClause = m[2];
+      const attrsRaw = m[3];
+      let rows = datasets[object] || [];
+      if (whereClause) {
+        const filter = parseWhere(whereClause.trim());
+        if (!filter) return 'CELL-01543: Invalid WHERE clause syntax for simulator';
+        rows = rows.filter(filter);
+      }
+      let attrs = null;
+      if (attrsRaw) attrs = attrsRaw.split(',').map(s => s.trim()).filter(Boolean);
+      return formatTable(rows, attrs);
+    }
+
+    function handleDescribe(raw) {
+      const m = raw.trim().match(/^DESCRIBE\s+(CELL|CELLDISK|GRIDDISK|PHYSICALDISK|METRICCURRENT|METRICHISTORY|ALERTHISTORY|ALERTDEFINITION|FLASHCACHE|FLASHCACHECONTENT|IORMPLAN|THRESHOLD)$/i);
+      if (!m) return errorSyntax();
+      return describeMap[m[1].toUpperCase()].join('\n');
+    }
+
+    function showLog(which) {
+      const rows = datasets.LOGS[which] || [];
+      return rows.length ? rows.join('\n') : 'No log lines returned';
+    }
+
+    function checkCellStatus() {
+      const cell = datasets.CELL[0];
+      const badPds = datasets.PHYSICALDISK.filter(r => r.status !== 'normal');
+      const badGds = datasets.GRIDDISK.filter(r => !['active','ONLINE'].includes((r.status || '').toLowerCase()) && r.status !== 'active');
+      const metrics = datasets.METRICCURRENT.filter(r => r.alertState && r.alertState !== 'normal');
+      const overall = badPds.some(r => r.status === 'failed') || metrics.some(r => r.alertState === 'critical') ? 'CRITICAL' : (badPds.length || metrics.length || datasets.ALERTHISTORY.some(a => a.severity === 'warning')) ? 'WARNING' : 'HEALTHY';
+      return [
+        `Overall status : ${overall}`,
+        `Cell          : ${cell.name}`,
+        `Cell services : cellsrv=${cell.cellsrvStatus}, ms=${cell.msStatus}, rs=${cell.rsStatus}`,
+        `Disk issues    : ${badPds.length}`,
+        `Metric alerts  : ${metrics.length}`,
+        `Active alerts  : ${datasets.ALERTHISTORY.filter(a => a.severity !== 'clear').length}`
+      ].join('\n');
+    }
+
+    function checkStorageHealth() {
+      const badCelldisks = datasets.CELLDISK.filter(r => r.status !== 'normal');
+      const badPds = datasets.PHYSICALDISK.filter(r => r.status !== 'normal');
+      const inactiveGrid = datasets.GRIDDISK.filter(r => r.status !== 'active');
+      return [
+        'Storage health summary',
+        `Celldisks non-normal : ${badCelldisks.map(r => r.name + '=' + r.status).join(', ') || 'none'}`,
+        `Physical disks issue : ${badPds.map(r => r.name + '=' + r.status).join(', ') || 'none'}`,
+        `Grid disks impacted  : ${inactiveGrid.map(r => r.name + '=' + r.status).join(', ') || 'none'}`
+      ].join('\n');
+    }
+
+    function showAlerts() {
+      const rows = datasets.ALERTHISTORY.filter(a => a.severity !== 'clear');
+      return rows.length ? formatTable(rows, ['alertSequenceID','severity','alertShortName','examinedObject','beginTime']) : 'No active alerts in current scenario';
+    }
+
+    function runDiag(which) {
+      if (which === 'DISKS') {
+        const bad = datasets.PHYSICALDISK.filter(r => r.status !== 'normal');
+        return [
+          'Disk diagnostics summary',
+          bad.length ? `Affected disks: ${bad.map(r => r.name).join(', ')}` : 'Affected disks: none',
+          bad.some(r => r.status === 'failed') ? 'Recommendation: isolate failed disk, review alert log, verify dependent griddisks, plan replacement.' : 'Recommendation: continue monitoring predictive failure / retry counters.'
+        ].join('\n');
+      }
+      if (which === 'FLASH') {
+        const fc = datasets.FLASHCACHE[0];
+        const m = datasets.METRICCURRENT.find(r => r.name === 'FC_BY_USED');
+        return [
+          'Flash diagnostics summary',
+          `Flash cache status : ${fc.status}`,
+          `Flash cache used   : ${m.metricValue}${m.metricUnit}`,
+          Number(m.metricValue) > 90 ? 'Recommendation: review cached objects and eviction pressure.' : 'Recommendation: flash cache operating within expected range.'
+        ].join('\n');
+      }
+      if (which === 'SERVICES') {
+        const cell = datasets.CELL[0];
+        return [
+          'Cell service diagnostics',
+          `cellsrv : ${cell.cellsrvStatus}`,
+          `ms      : ${cell.msStatus}`,
+          `rs      : ${cell.rsStatus}`,
+          'Recommendation: if any service is not running, correlate with RS/MS/CELLSRV logs and restart workflow on real environment.'
+        ].join('\n');
+      }
+      return errorSyntax();
+    }
+
+    function helpText() {
+      return [
+        'Supported simulator commands:',
+        'HELP',
+        'SHOW SCENARIO',
+        'SCENARIO HEALTHY | WARNING | FAILURE | CAPACITY | RESYNC',
+        'LIST CELL | CELLDISK | GRIDDISK | PHYSICALDISK | METRICCURRENT | METRICHISTORY',
+        'LIST ALERTHISTORY | ALERTDEFINITION | FLASHCACHE | FLASHCACHECONTENT | IORMPLAN | THRESHOLD',
+        'LIST <object> DETAIL',
+        'LIST <object> ATTRIBUTES <attr1,attr2,...>',
+        "LIST <object> WHERE <attribute> = 'value' ATTRIBUTES <attr1,attr2>'",
+        "LIST <object> WHERE <attribute> != 'value' ATTRIBUTES <attr1,attr2>'",
+        "LIST <object> WHERE <attribute> LIKE 'DATA%' ATTRIBUTES <attr1,attr2>'",
+        'DESCRIBE CELL | CELLDISK | GRIDDISK | PHYSICALDISK | METRICCURRENT | METRICHISTORY',
+        'DESCRIBE ALERTHISTORY | ALERTDEFINITION | FLASHCACHE | FLASHCACHECONTENT | IORMPLAN | THRESHOLD',
+        'CHECK CELL STATUS',
+        'CHECK STORAGE HEALTH',
+        'SHOW ALERTS',
+        'SHOW LOG ALERT | CELLSRV | MS | RS',
+        'RUN DIAG DISKS | FLASH | SERVICES',
+        'CLEAR'
+      ].join('\n');
+    }
+
+    function errorSyntax() { return 'CELL-01543: Invalid command syntax'; }
+
+    function execute(cmd) {
+      const raw = cmd.trim();
+      if (!raw) return '';
+      const upper = raw.toUpperCase();
+      if (upper === 'HELP') return helpText();
+      if (upper === 'SHOW SCENARIO') return `Current scenario: ${currentScenario}`;
+      if (upper === 'CHECK CELL STATUS') return checkCellStatus();
+      if (upper === 'CHECK STORAGE HEALTH') return checkStorageHealth();
+      if (upper === 'SHOW ALERTS') return showAlerts();
+      if (upper === 'SHOW LOG ALERT') return showLog('ALERT');
+      if (upper === 'SHOW LOG CELLSRV') return showLog('CELLSRV');
+      if (upper === 'SHOW LOG MS') return showLog('MS');
+      if (upper === 'SHOW LOG RS') return showLog('RS');
+      if (upper === 'RUN DIAG DISKS') return runDiag('DISKS');
+      if (upper === 'RUN DIAG FLASH') return runDiag('FLASH');
+      if (upper === 'RUN DIAG SERVICES') return runDiag('SERVICES');
+      if (upper === 'CLEAR') {
+        terminal.innerHTML = '';
+        banner();
+        return null;
+      }
+      const scen = upper.match(/^SCENARIO\s+(HEALTHY|WARNING|FAILURE|CAPACITY|RESYNC)$/);
+      if (scen) {
+        currentScenario = scen[1];
+        datasets = applyScenario(currentScenario);
+        return `Scenario changed to ${currentScenario}`;
+      }
+      if (upper.startsWith('LIST ')) return handleList(raw);
+      if (upper.startsWith('DESCRIBE ')) return handleDescribe(raw);
+      return 'CELL-01545: Unsupported command in ExaGuru simulator';
+    }
+
+    function runCommand() {
+      const cmd = cmdInput.value;
+      if (!cmd.trim()) return;
+      history.push(cmd);
+      historyIndex = history.length;
+      addLine(`<span class="prompt">CellCLI&gt;</span> ${escapeHtml(cmd)}`);
+      const result = execute(cmd);
+      if (result !== null && result !== '') {
+        const css = result.startsWith('CELL-01543') || result.startsWith('CELL-01545') ? 'error' : 'output';
+        addLine(escapeHtml(result).replace(/\n/g, '<br>'), css);
+      }
+      addLine('');
+      cmdInput.value = '';
+    }
+
+    document.querySelectorAll('.chip').forEach(el => el.addEventListener('click', () => {
+      cmdInput.value = el.dataset.cmd;
+      runCommand();
+    }));
+    runBtn.addEventListener('click', runCommand);
+    clearBtn.addEventListener('click', () => { terminal.innerHTML = ''; banner(); });
+    cmdInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') runCommand();
+      if (e.key === 'ArrowUp') {
+        if (historyIndex > 0) { historyIndex -= 1; cmdInput.value = history[historyIndex] || ''; }
+        e.preventDefault();
+      }
+      if (e.key === 'ArrowDown') {
+        if (historyIndex < history.length - 1) { historyIndex += 1; cmdInput.value = history[historyIndex] || ''; }
+        else { historyIndex = history.length; cmdInput.value = ''; }
+        e.preventDefault();
+      }
+    });
+
+
+    const quizQuestions = [
+      {q:'1. Which command shows the current training scenario?', options:['SHOW SCENARIO','SHOW STATUS','LIST SCENARIO','DESCRIBE SCENARIO'], answer:0, explain:'SHOW SCENARIO displays the active simulator scenario.'},
+      {q:'2. Which object is best to list first for overall cell service health?', options:['CELL','FLASHCACHECONTENT','THRESHOLD','IORMPLAN'], answer:0, explain:'LIST CELL shows high-level service and cell status attributes.'},
+      {q:'3. Which clause helps reduce output to only selected columns?', options:['WHERE','DETAIL','ATTRIBUTES','ORDER BY'], answer:2, explain:'ATTRIBUTES limits output to the columns you want.'},
+      {q:'4. Which command is the best quick check for physical disk problems?', options:['LIST PHYSICALDISK','LIST THRESHOLD','LIST IORMPLAN','DESCRIBE CELL'], answer:0, explain:'Physical disk status, slot number, and errors are exposed through PHYSICALDISK.'},
+      {q:'5. Which scenario is most likely to show a failed disk and inactive griddisk?', options:['HEALTHY','WARNING','FAILURE','RESYNC'], answer:2, explain:'FAILURE is the scenario designed for that pattern.'},
+      {q:'6. Which command helps you review current metric values rather than history?', options:['LIST METRICHISTORY','LIST ALERTHISTORY','LIST METRICCURRENT','SHOW ALERTS'], answer:2, explain:'METRICCURRENT is the current snapshot; METRICHISTORY is historical.'},
+      {q:'7. Which command is best for seeing alert messages already raised?', options:['LIST ALERTHISTORY','LIST GRIDDISK','DESCRIBE ALERTHISTORY','RUN DIAG SERVICES'], answer:0, explain:'ALERTHISTORY contains alert records and messages.'},
+      {q:'8. Which command best fits a first log review step?', options:['SHOW LOG ALERT','LIST FLASHCACHE','LIST THRESHOLD','DESCRIBE GRIDDISK'], answer:0, explain:'The alert log summary is the fastest first log checkpoint.'},
+      {q:'9. Which helper command summarizes service state for cellsrv, ms, and rs?', options:['CHECK STORAGE HEALTH','CHECK CELL STATUS','RUN DIAG SERVICES','SHOW LOG RS'], answer:1, explain:'CHECK CELL STATUS gives the concise service triage summary.'},
+      {q:'10. Which filter finds only abnormal physical disks?', options:["LIST PHYSICALDISK WHERE status != 'normal' ATTRIBUTES name,status,errorCount","LIST PHYSICALDISK DETAIL","LIST PHYSICALDISK ATTRIBUTES name","DESCRIBE PHYSICALDISK"], answer:0, explain:'The WHERE clause isolates non-normal disks.'},
+      {q:'11. Which object maps storage to ASM diskgroups?', options:['CELLDISK','GRIDDISK','CELL','ALERTHISTORY'], answer:1, explain:'GRIDDISK is the object associated with ASM disk groups.'},
+      {q:'12. Which command is most relevant for flash cache pressure analysis?', options:['LIST FLASHCACHE','LIST CELL','LIST IORMPLAN','SHOW LOG RS'], answer:0, explain:'FLASHCACHE gives the high-level flash cache status and size.'},
+      {q:'13. Which scenario is best for practicing storage pressure without failed hardware?', options:['CAPACITY','FAILURE','HEALTHY','WARNING'], answer:0, explain:'CAPACITY focuses on space pressure and utilization concerns.'},
+      {q:'14. Which command describes the available attributes for an object?', options:['LIST DETAIL','DESCRIBE <object>','SHOW ATTRIBUTES','HELP ATTRIBUTES'], answer:1, explain:'DESCRIBE is the correct way to inspect the available fields in this simulator.'},
+      {q:'15. Which command would you use after alerts to inspect cellsrv-specific messages?', options:['SHOW LOG CELLSRV','SHOW LOG MS','SHOW LOG RS','LIST METRICCURRENT'], answer:0, explain:'CELLSRV log review is appropriate after service/storage symptoms.'},
+      {q:'16. Which scenario helps explain busy metrics during recovery or rebalance?', options:['HEALTHY','RESYNC','CAPACITY','WARNING'], answer:1, explain:'RESYNC simulates recovery-style workload.'},
+      {q:'17. Which helper is most targeted at disk problem diagnosis?', options:['RUN DIAG DISKS','RUN DIAG FLASH','RUN DIAG SERVICES','SHOW ALERTS'], answer:0, explain:'RUN DIAG DISKS summarizes disk-related findings.'},
+      {q:'18. Which command shows detailed output for every attribute of an object?', options:['LIST CELL DETAIL','LIST CELL ATTRIBUTES','DESCRIBE CELL','CHECK CELL STATUS'], answer:0, explain:'DETAIL prints a fuller object record.'},
+      {q:'19. Which command helps isolate only FD* cell disks?', options:["LIST CELLDISK WHERE name LIKE 'FD%' ATTRIBUTES name,status,size,errorCount","LIST CELLDISK DETAIL","LIST CELLDISK","DESCRIBE CELLDISK"], answer:0, explain:'LIKE is the correct pattern filter for that use case.'},
+      {q:'20. What is the best first state to learn before troubleshooting?', options:['WARNING','HEALTHY','FAILURE','CAPACITY'], answer:1, explain:'Always learn the healthy baseline first.'},
+      {q:'21. Which object is most suitable for threshold definitions?', options:['THRESHOLD','ALERTHISTORY','METRICCURRENT','CELL'], answer:0, explain:'THRESHOLD contains threshold-style settings in the simulator.'},
+      {q:'22. Which command sequence is the best triage start?', options:['CHECK CELL STATUS → SHOW ALERTS → targeted LIST/LOG checks','SHOW LOG RS only','DESCRIBE all objects first','LIST FLASHCACHECONTENT first'], answer:0, explain:'Start broad, then narrow down using alerts, object lists, and logs.'},
+      {q:'23. Which command best supports investigating management-service style messages?', options:['SHOW LOG MS','SHOW LOG ALERT','SHOW LOG CELLSRV','RUN DIAG FLASH'], answer:0, explain:'MS log is the most relevant source for management-service messages.'},
+      {q:'24. Which object is best for reviewing historical metric anomalies?', options:['METRICHISTORY','METRICCURRENT','ALERTDEFINITION','CELL'], answer:0, explain:'METRICHISTORY is the historical series view.'},
+      {q:'25. In this simulator, what should a candidate do after changing scenario?', options:['Repeat the same health-check command set and compare outputs','Refresh the browser immediately','Avoid logs and metrics','Only run DESCRIBE commands'], answer:0, explain:'Scenario comparison is the core learning pattern in this lab.'}
+    ];
+
+    function renderQuiz() {
+      const container = document.getElementById('quizContainer');
+      if (!container) return;
+      container.innerHTML = quizQuestions.map((item, idx) => `
+        <div class="quiz-q">
+          <p>${escapeHtml(item.q)}</p>
+          <div class="quiz-options">
+            ${item.options.map((opt, j) => `<label><input type="radio" name="quiz_${idx}" value="${j}"> ${escapeHtml(opt)}</label>`).join('')}
+          </div>
+          <div class="quiz-actions">
+            <button type="button" onclick="checkQuizAnswer(${idx})">Check</button>
+            <span id="quiz_result_${idx}" class="quiz-result mini"></span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function checkQuizAnswer(idx) {
+      const selected = document.querySelector(`input[name="quiz_${idx}"]:checked`);
+      const result = document.getElementById(`quiz_result_${idx}`);
+      if (!selected) {
+        result.innerHTML = '<span class="warn">Select an option first.</span>';
+        return;
+      }
+      const chosen = Number(selected.value);
+      const item = quizQuestions[idx];
+      if (chosen === item.answer) {
+        result.innerHTML = `<span class="success">Correct.</span> ${escapeHtml(item.explain)}`;
+      } else {
+        result.innerHTML = `<span class="error">Wrong.</span> Correct answer: ${escapeHtml(item.options[item.answer])}. ${escapeHtml(item.explain)}`;
+      }
+    }
+
+    renderQuiz();
+    banner();
+  </script>
+</body>
+</html>
